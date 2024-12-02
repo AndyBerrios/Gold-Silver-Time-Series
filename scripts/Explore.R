@@ -1,8 +1,10 @@
 
 ################################################################################
-#libraries
+#libraries and data
 library(tidyverse)
 library(gridExtra)
+library(tseries) # for stationarity testing
+library(forecast) 
 
 gold <- read.csv('data/Gold_Historical.csv', skip = 9, header = TRUE)
 silver <- read.csv('data/Silver_Historical.csv', skip = 9, header = TRUE)
@@ -80,30 +82,41 @@ full %>% ggplot() +
 
 ################################################################################
 # ACF testing
-gold_cr <- full %>% 
-  select(date, real_gd)
-
-c <- acf(gold_cr, main = 'ACF of Real Gold Prices',sub = 'Figure 4')
+acf(full$real_gd, main = 'ACF of Real Gold Prices',sub = 'Figure 4')
 
 
-####
-silver_cr <- full %>% 
-  select(date, real_sv)
+acf(full$real_sv, main = 'ACF of Real Silver Prices', sub = 'Figure 5')
 
-d <- acf(silver_cr, main = 'ACF of Real Silver Prices', sub = 'Figure 5')
-
-grid.arrange(c, d , ncol = 1)
 
 ###################################
 # Differencing
-gold_diff <- diff(gold_cr)
-acf(gold_diff, main = "ACF of Differenced Series")
+gold_diff <- diff(full$real_gd)
+acf(gold_diff, main = "ACF of Differenced Gold Series")
+
+silver_diff <- diff(full$real_sv)
+acf(silver_diff, main = "ACF of Differenced Silver Series")
+
+# Augmented Dickey-Fuller (ADF) test, to confirm stationarity:
+adf.test(gold_diff) 
+adf.test(silver_diff) 
+
+################################################################################
+# Modeling using: auto.arima
+
+# transforming into time series objects
+gold_ts <- ts(gold$real, start = c(1915,1), frequency = 12)
+silver_ts <- ts(silver$real, start = c(1915,1), frequency = 12)
+
+# Fit ARIMA model
+gd_model <- auto.arima(gold_ts, d = 1)
+sv_model <- auto.arima(silver_ts, d = 1)
+# View model summary
+summary(gd_model)
+summary(sv_model)
 
 
-
-
-
-
+##################################
+# Improving Gold Model
 
 
 
