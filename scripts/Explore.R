@@ -6,7 +6,8 @@ library(gridExtra)
 library(tseries) # for stationarity testing
 library(forecast) 
 library(lmtest) # for granger test of corr
-library(vars) # check both series influence each othe
+library(vars) # check both series influence each other
+library(Metrics) # evaluating the forecast results
 
 gold <- read.csv('data/Gold_Historical.csv', skip = 9, header = TRUE)
 silver <- read.csv('data/Silver_Historical.csv', skip = 9, header = TRUE)
@@ -176,6 +177,22 @@ checkresiduals(arimax_model)
 ################################################################################
 # Forecasting
 
+# Forecast 10 steps ahead for silver_ts
+silver_forecast <- forecast(sv_model, h = 10)$mean
+
+forecast_gold <- forecast(arimax_model, xreg = silver_forecast, h = 10)  # Forecast 10 steps ahead for airmax_md
+plot(forecast_gold)
+
+
+################################################################################
+# Evaluating Forecasting
+
+forecast_values <- forecast_gold$mean  # Extracts the forecasted values
+actual_values <- tail(full$real_gd, 10) # done because we didnt split train/test
+
+
+rmse(actual_values, forecast_values)
+mae(actual_values, forecast_values)
 
 
 
