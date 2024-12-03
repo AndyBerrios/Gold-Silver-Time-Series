@@ -161,8 +161,22 @@ var_model <- VAR(full[, c("real_gd", "real_sv")], p = 2, type = "const")  # Adju
 summary(var_model)
 
 
+###################################
+# auto.arima for multivariate
+
 arimax_model <- auto.arima(gold_ts, xreg = silver_ts)
 summary(arimax_model)
+
+
+################################################################################
+# evaluating results
+checkresiduals(arimax_model)
+
+
+################################################################################
+# Forecasting
+
+
 
 
 
