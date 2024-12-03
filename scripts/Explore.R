@@ -5,16 +5,19 @@ library(tidyverse)
 library(gridExtra)
 library(tseries) # for stationarity testing
 library(forecast) 
+library(lmtest) # for granger test of corr
+library(vars) # check both series influence each othe
 
 gold <- read.csv('data/Gold_Historical.csv', skip = 9, header = TRUE)
 silver <- read.csv('data/Silver_Historical.csv', skip = 9, header = TRUE)
 
 full <- left_join(gold, silver, by = 'date', suffix = c('_gd','_sv'), keep = FALSE)
 
+full$nominal_gd <- NULL
+full$nominal_sv <- NULL 
 
 ################################################################################
 # Exploratory plots
-#par(mfrow=c(2,1))  
 
 a <- full %>% ggplot(aes(x = date, y = real_gd)) +
   geom_line() +
@@ -117,6 +120,55 @@ summary(sv_model)
 
 ##################################
 # Improving Gold Model
+
+par(mfrow=c(2,1)) 
+acf(gold_diff, main = "ACF of Differenced Gold Series")
+pacf(gold_diff, main = "PACF of Differenced Gold Series")
+
+
+lambda <- BoxCox.lambda(gold_ts)
+gold_trans <- BoxCox(gold_ts, lambda)
+
+gd_model_2 <- auto.arima(gold_trans)
+summary(gd_model_2)
+
+
+
+################################################################################
+# Correaltion between both differentiated datasets
+ccf(gold_diff, silver_diff, main = "Cross-Correlation Between Gold and Silver")
+
+# Granger causality test to test if correlation is significant
+grangertest(gold_diff ~ silver_diff, order = 2)  # Adjust `order` based on lags
+
+
+################################################################################
+# MULIVARIATE MODELS
+# Var to see if both series influence each other
+
+# The VAR() function implements a Vector Autoregression (VAR) model, 
+# a statistical model used to analyze and predict multivariate time series data. 
+# Unlike univariate models, VAR considers multiple dependent time series, 
+# allowing for lagged values of all variables to influence each variable in the system.
+# It assumes all variables are interdependent and uses lagged values of each series 
+# to predict the current values of all series in the model. 
+# This makes it particularly useful for capturing relationships and 
+# dependencies between time series variables, such as gold and silver prices.
+
+# Fit VAR model
+var_model <- VAR(full[, c("real_gd", "real_sv")], p = 2, type = "const")  # Adjust `p` as needed
+
+summary(var_model)
+
+
+arimax_model <- auto.arima(gold_ts, xreg = silver_ts)
+summary(arimax_model)
+
+
+
+
+
+
 
 
 
